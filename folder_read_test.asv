@@ -1,0 +1,125 @@
+clc;
+clear;
+close all;
+
+imge=uigetfile('*.*','Select Solution Sheet');
+img=imread(imge);
+ig=im2gray(img);
+bw1 = imbinarize(ig);
+SE1 = strel('disk',5);
+ansfl = imclose(bw1,SE1);
+ansfl = ~ansfl;
+%loading soln
+real_ans=zeros(1,50);
+for j=1:5
+    y_ans=linspace(495,895,11);
+    x_ans=linspace(115+140*(j-1),175+140*(j-1),4);
+    for i=1:10
+        if i<=5
+            for k=1:4
+                s = sum(sum(ansfl(y_ans(i)-5:y_ans(i)+5,x_ans(k)-5:x_ans(k)+5)));
+                if s>80
+                    real_ans((j-1)*10+i)=k;
+                    break;
+                end
+            end
+        else
+            for k=1:4
+                s = sum(sum(ansfl(y_ans(i+1)-5:y_ans(i+1)+5,x_ans(k)-5:x_ans(k)+5)));
+                if s>80
+                    real_ans((j-1)*10+i)=k;
+                    break;
+                end
+            end
+        end
+    end
+end
+
+
+f=uigetdir();
+d=ls(f);
+d(1,:)=[];
+d(1,:)=[];
+s=size(d);
+
+roll_array=zeros(s(1),1);
+code_array=zeros(s(1),1);
+marks_array=zeros(s(1),1);
+
+for k_index=1:size(d)
+    im=imread(fullfile(f,d(k,:)));
+%     figure,imshow(im);
+    igs=im2gray(im);
+    bw = imbinarize(igs);
+    SE = strel('disk',5);
+    ifl = imclose(bw,SE);
+    ifl = ~ifl;
+
+    y_roll = linspace(235,415,10);
+    x_roll = linspace(74,254,10);
+    roll=0;
+    for j=1:10
+        for i=1:10
+            s = sum(sum(ifl(y_roll(i)-5:y_roll(i)+5,x_roll(j)-5:x_roll(j)+5)));
+            if s>80
+                roll=roll*10+mod(i,10);
+                break;
+            end
+        end
+    end
+    roll_array(k_index)=roll;
+
+    y_code = linspace(235,415,10);
+    x_code = linspace(314,354,3);
+    code=0;
+    for j=1:3
+        for i=1:10
+            s = sum(sum(ifl(y_code(i)-6:y_code(i)+6,x_code(j)-6:x_code(j)+6)));
+            if s>50
+                code=code*10+mod(i,10);
+                break;
+            end
+        end
+    end
+    code_array(k_index)= code;
+    %checking answer
+
+
+marks=0;
+for j=1:5
+    y_ans=linspace(495,895,11);
+    x_ans=linspace(115+140*(j-1),175+140*(j-1),4);
+    for i=1:10
+        fill=0;
+        flag=0;
+        if i<=5
+            for k=1:4
+                s = sum(sum(ifl(y_ans(i)-5:y_ans(i)+5,x_ans(k)-5:x_ans(k)+5)));
+                if s>80 
+                   fill=fill+1;
+                   if real_ans((j-1)*10+i)==k
+                        flag=1;
+                    end
+                end
+            end
+        else
+            for k=1:4
+                s = sum(sum(ifl(y_ans(i+1)-5:y_ans(i+1)+5,x_ans(k)-5:x_ans(k)+5)));
+                if s>80 
+                   fill=fill+1;
+                   if real_ans((j-1)*10+i)==k
+                        flag=1;
+                    end
+                end
+            end
+        end
+        if fill==1 && flag == 1
+            marks=marks+1;
+        end
+    end
+end
+       marks_array(k_index)= marks
+end
+xlswrite('result.xls',roll_array,'Sheet1','B2');
+xlswrite('result.xls',code_array,'Sheet1','C2');
+xlswrite('result.xls',marks_array,'Sheet1','D2');
